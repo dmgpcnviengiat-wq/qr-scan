@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  <title>Quét QR nguyên liệu</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #0f172a;
+      color: white;
+      font-size: 28px;
+    }
+
+    .page {
+      width: 100%;
+      min-height: 100vh;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .header {
+      background: #111827;
+      border: 2px solid #334155;
+      border-radius: 24px;
+      padding: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px 0;
+      font-size: 38px;
+      line-height: 1.2;
+    }
+
+    .sub {
+      font-size: 26px;
+      line-height: 1.4;
+      color: #cbd5e1;
+    }
+
+    .reader-card {
+      background: white;
+      color: #111827;
+      border-radius: 24px;
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    #reader {
+      width: 100%;
+      min-height: 360px;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    #reader video {
+      width: 100% !important;
+      border-radius: 20px;
+    }
+
+    .btn {
+      width: 100%;
+      min-height: 82px;
+      border: none;
+      border-radius: 22px;
+      padding: 12px 18px;
+      font-size: 30px;
+      font-weight: 900;
+      cursor: pointer;
+      line-height: 1.2;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-light {
+      background: #e0e7ff;
+      color: #1e40af;
+    }
+
+    .manual-card {
+      background: #111827;
+      border: 2px solid #334155;
+      border-radius: 24px;
+      padding: 18px;
+    }
+
+    input {
+      width: 100%;
+      min-height: 78px;
+      border-radius: 22px;
+      border: 2px solid #475569;
+      padding: 0 18px;
+      font-size: 30px;
+      margin-bottom: 12px;
+    }
+
+    .message {
+      border-radius: 22px;
+      padding: 18px;
+      background: #1e293b;
+      border: 2px solid #334155;
+      font-size: 27px;
+      line-height: 1.45;
+      color: #e5e7eb;
+    }
+
+    .error {
+      background: #7f1d1d;
+      border-color: #ef4444;
+      color: white;
+    }
+
+    .success {
+      background: #14532d;
+      border-color: #22c55e;
+      color: white;
+    }
+
+    @media (max-width: 390px) {
+      html,
+      body {
+        font-size: 25px;
+      }
+
+      h1 {
+        font-size: 34px;
+      }
+
+      .sub {
+        font-size: 24px;
+      }
+
+      .btn {
+        font-size: 27px;
+      }
+
+      input {
+        font-size: 27px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="header">
+      <h1>Quét QR nguyên liệu</h1>
+      <div class="sub">
+        Đưa camera vào mã QR trên tem nguyên liệu. Quét xong sẽ tự quay lại trang xuất hàng.
+      </div>
+    </div>
+
+    <div id="messageBox" class="message">
+      Đang chuẩn bị camera...
+    </div>
+
+    <div class="reader-card">
+      <div id="reader"></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="startScanner()">
+      Mở lại camera
+    </button>
+
+    <div class="manual-card">
+      <div class="sub" style="margin-bottom:12px;">
+        Nếu camera không quét được, nhập Id QR:
+      </div>
+      <input id="manualQr" type="text" placeholder="Nhập Id QR">
+      <button class="btn btn-light" onclick="submitManual()">
+        Gửi mã QR
+      </button>
+    </div>
+
+    <button class="btn btn-danger" onclick="goBackWithoutQr()">
+      Quay lại
+    </button>
+  </div>
+
+  <script>
+    let html5QrScanner = null;
+    let isProcessing = false;
+
+    const params = new URLSearchParams(window.location.search);
+    const returnUrl = params.get("returnUrl") || "";
+    const lineId = params.get("lineId") || "";
+
+    document.addEventListener("DOMContentLoaded", function() {
+      if (!returnUrl || !lineId) {
+        showMessage("Thiếu returnUrl hoặc lineId. Vui lòng mở trang quét từ hệ thống xuất hàng.", "error");
+        return;
+      }
+
+      startScanner();
+    });
+
+    function showMessage(message, type) {
+      const box = document.getElementById("messageBox");
+      box.className = "message";
+
+      if (type === "error") box.classList.add("error");
+      if (type === "success") box.classList.add("success");
+
+      box.innerText = message;
+    }
+
+    function startScanner() {
+      if (typeof Html5Qrcode === "undefined") {
+        showMessage("Không tải được thư viện quét QR. Kiểm tra mạng Internet hoặc nhập Id QR thủ công.", "error");
+        return;
+      }
+
+      isProcessing = false;
+      showMessage("Đang mở camera. Hãy bấm Cho phép nếu trình duyệt hỏi quyền camera.", "");
+
+      stopScanner(function() {
+        html5QrScanner = new Html5Qrcode("reader");
+
+        const config = {
+          fps: 15,
+          qrbox: function(viewfinderWidth, viewfinderHeight) {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const size = Math.floor(minEdge * 0.78);
+
+            return {
+              width: size,
+              height: size
+            };
+          },
+          aspectRatio: 1.0
+        };
+
+        html5QrScanner.start(
+          {
+            facingMode: "environment"
+          },
+          config,
+          function(decodedText) {
+            if (isProcessing) return;
+
+            isProcessing = true;
+            showMessage("Đã quét được QR. Đang quay lại hệ thống...", "success");
+            stopScanner(function() {
+              returnWithQr(decodedText);
+            });
+          },
+          function(errorMessage) {}
+        ).then(function() {
+          showMessage("Camera đã sẵn sàng. Đưa mã QR vào khung quét.", "");
+        }).catch(function(err) {
+          showMessage("Không mở được camera. Hãy mở bằng Chrome/Safari hoặc nhập Id QR thủ công.", "error");
+        });
+      });
+    }
+
+    function stopScanner(callback) {
+      if (html5QrScanner) {
+        html5QrScanner.stop()
+          .then(function() {
+            html5QrScanner.clear();
+            html5QrScanner = null;
+            if (callback) callback();
+          })
+          .catch(function() {
+            html5QrScanner = null;
+            if (callback) callback();
+          });
+      } else {
+        if (callback) callback();
+      }
+    }
+
+    function returnWithQr(qrText) {
+      const url = returnUrl
+        + "?qr=" + encodeURIComponent(String(qrText || "").trim())
+        + "&lineId=" + encodeURIComponent(lineId);
+
+      window.location.href = url;
+    }
+
+    function submitManual() {
+      const value = document.getElementById("manualQr").value.trim();
+
+      if (!value) {
+        alert("Vui lòng nhập Id QR.");
+        return;
+      }
+
+      returnWithQr(value);
+    }
+
+    function goBackWithoutQr() {
+      window.location.href = returnUrl;
+    }
+  </script>
+</body>
+</html>
