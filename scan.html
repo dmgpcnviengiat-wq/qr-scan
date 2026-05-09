@@ -22,54 +22,67 @@
       font-family: Arial, Helvetica, sans-serif;
       background: #0f172a;
       color: white;
-      font-size: 30px;
+      font-size: 18px;
+    }
+
+    body {
+      overflow-x: hidden;
     }
 
     .page {
       width: 100%;
       min-height: 100vh;
-      padding: 14px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
     }
 
     .header,
     .manual-card,
     .message {
       background: #111827;
-      border: 2px solid #334155;
-      border-radius: 24px;
-      padding: 18px;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      padding: 14px;
     }
 
     h1 {
-      margin: 0 0 10px 0;
-      font-size: 40px;
+      margin: 0 0 6px 0;
+      font-size: 26px;
       line-height: 1.2;
+      font-weight: 900;
     }
 
     .sub {
-      font-size: 27px;
+      font-size: 16px;
       line-height: 1.45;
       color: #cbd5e1;
     }
 
     .camera-card {
       background: #020617;
-      border: 2px solid #334155;
-      border-radius: 24px;
-      padding: 12px;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      padding: 10px;
       overflow: hidden;
       position: relative;
+      width: 100%;
+    }
+
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: black;
+      border-radius: 16px;
+      overflow: hidden;
     }
 
     video {
       width: 100%;
-      min-height: 360px;
-      max-height: 62vh;
+      height: 100%;
       object-fit: cover;
-      border-radius: 20px;
       background: black;
       display: block;
     }
@@ -78,24 +91,22 @@
       position: absolute;
       left: 50%;
       top: 50%;
-      width: 68vw;
-      max-width: 420px;
-      height: 68vw;
-      max-height: 420px;
+      width: 72%;
+      height: 72%;
       transform: translate(-50%, -50%);
-      border: 6px solid #22c55e;
-      border-radius: 24px;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.32);
+      border: 4px solid #22c55e;
+      border-radius: 18px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.28);
       pointer-events: none;
     }
 
     .btn {
       width: 100%;
-      min-height: 88px;
+      min-height: 58px;
       border: none;
-      border-radius: 24px;
-      padding: 14px 18px;
-      font-size: 32px;
+      border-radius: 16px;
+      padding: 10px 14px;
+      font-size: 18px;
       font-weight: 900;
       cursor: pointer;
       line-height: 1.2;
@@ -124,17 +135,17 @@
 
     input {
       width: 100%;
-      min-height: 84px;
-      border-radius: 24px;
-      border: 2px solid #475569;
-      padding: 0 18px;
-      font-size: 32px;
-      margin-bottom: 12px;
+      min-height: 56px;
+      border-radius: 16px;
+      border: 1px solid #475569;
+      padding: 0 14px;
+      font-size: 18px;
+      margin-bottom: 10px;
       text-align: center;
     }
 
     .message {
-      font-size: 28px;
+      font-size: 16px;
       line-height: 1.45;
       color: #e5e7eb;
     }
@@ -157,36 +168,39 @@
       color: white;
     }
 
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
     canvas {
       display: none;
     }
 
     @media (max-width: 390px) {
-      html,
-      body {
-        font-size: 26px;
+      .page {
+        padding: 10px;
+        gap: 10px;
       }
 
       h1 {
-        font-size: 35px;
-      }
-
-      .sub {
         font-size: 24px;
       }
 
+      .sub,
+      .message {
+        font-size: 15px;
+      }
+
       .btn {
-        font-size: 28px;
-        min-height: 78px;
+        font-size: 17px;
+        min-height: 54px;
       }
 
       input {
-        font-size: 28px;
-        min-height: 76px;
-      }
-
-      .message {
-        font-size: 25px;
+        font-size: 17px;
+        min-height: 54px;
       }
     }
   </style>
@@ -199,7 +213,7 @@
     <div class="header">
       <h1>Quét QR nguyên liệu</h1>
       <div class="sub">
-        Bấm nút mở camera, đưa mã QR vào giữa khung xanh. Quét xong sẽ tự quay lại hệ thống.
+        Đưa mã QR vào giữa khung xanh. Quét xong sẽ tự quay lại hệ thống.
       </div>
     </div>
 
@@ -207,24 +221,30 @@
       Bấm “Mở camera” để bắt đầu quét.
     </div>
 
-    <button class="btn btn-primary" onclick="startScanner()">
-      Mở camera
-    </button>
-
     <div class="camera-card">
-      <video id="video" playsinline muted></video>
-      <div class="scan-frame"></div>
+      <div class="video-wrap">
+        <video id="video" playsinline muted></video>
+        <div class="scan-frame"></div>
+      </div>
     </div>
 
-    <button class="btn btn-danger" onclick="stopScanner()">
-      Tắt camera
-    </button>
+    <div class="button-row">
+      <button class="btn btn-primary" onclick="startScanner()">
+        Mở camera
+      </button>
+
+      <button class="btn btn-danger" onclick="stopScanner()">
+        Tắt camera
+      </button>
+    </div>
 
     <div class="manual-card">
-      <div class="sub" style="margin-bottom:12px;">
-        Nếu camera không mở hoặc không quét được, nhập Id QR:
+      <div class="sub" style="margin-bottom:10px;">
+        Nếu camera không quét được, nhập Id QR:
       </div>
+
       <input id="manualQr" type="text" placeholder="Nhập Id QR">
+
       <button class="btn btn-light" onclick="submitManual()">
         Gửi mã QR
       </button>
@@ -317,7 +337,7 @@
         let msg = "Không mở được camera.";
 
         if (err && err.name === "NotAllowedError") {
-          msg = "Bạn đã chặn quyền camera. Vào cài đặt trình duyệt để cho phép camera.";
+          msg = "Trình duyệt đang chặn quyền camera. Hãy cấp quyền camera cho trang này.";
         } else if (err && err.name === "NotFoundError") {
           msg = "Không tìm thấy camera trên thiết bị.";
         } else if (err && err.name === "NotReadableError") {
