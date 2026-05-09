@@ -6,7 +6,7 @@
 
   <title>Quét QR nguyên liệu</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
   <style>
     * {
@@ -22,7 +22,7 @@
       font-family: Arial, Helvetica, sans-serif;
       background: #0f172a;
       color: white;
-      font-size: 28px;
+      font-size: 30px;
     }
 
     .page {
@@ -34,7 +34,9 @@
       gap: 14px;
     }
 
-    .header {
+    .header,
+    .manual-card,
+    .message {
       background: #111827;
       border: 2px solid #334155;
       border-radius: 24px;
@@ -43,46 +45,61 @@
 
     h1 {
       margin: 0 0 10px 0;
-      font-size: 38px;
+      font-size: 40px;
       line-height: 1.2;
     }
 
     .sub {
-      font-size: 26px;
-      line-height: 1.4;
+      font-size: 27px;
+      line-height: 1.45;
       color: #cbd5e1;
     }
 
-    .reader-card {
-      background: white;
-      color: #111827;
+    .camera-card {
+      background: #020617;
+      border: 2px solid #334155;
       border-radius: 24px;
       padding: 12px;
       overflow: hidden;
+      position: relative;
     }
 
-    #reader {
+    video {
       width: 100%;
       min-height: 360px;
+      max-height: 62vh;
+      object-fit: cover;
       border-radius: 20px;
-      overflow: hidden;
+      background: black;
+      display: block;
     }
 
-    #reader video {
-      width: 100% !important;
-      border-radius: 20px;
+    .scan-frame {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 68vw;
+      max-width: 420px;
+      height: 68vw;
+      max-height: 420px;
+      transform: translate(-50%, -50%);
+      border: 6px solid #22c55e;
+      border-radius: 24px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.32);
+      pointer-events: none;
     }
 
     .btn {
       width: 100%;
-      min-height: 82px;
+      min-height: 88px;
       border: none;
-      border-radius: 22px;
-      padding: 12px 18px;
-      font-size: 30px;
+      border-radius: 24px;
+      padding: 14px 18px;
+      font-size: 32px;
       font-weight: 900;
       cursor: pointer;
       line-height: 1.2;
+      text-align: center;
     }
 
     .btn-primary {
@@ -100,29 +117,24 @@
       color: #1e40af;
     }
 
-    .manual-card {
-      background: #111827;
-      border: 2px solid #334155;
-      border-radius: 24px;
-      padding: 18px;
+    .btn-success {
+      background: #16a34a;
+      color: white;
     }
 
     input {
       width: 100%;
-      min-height: 78px;
-      border-radius: 22px;
+      min-height: 84px;
+      border-radius: 24px;
       border: 2px solid #475569;
       padding: 0 18px;
-      font-size: 30px;
+      font-size: 32px;
       margin-bottom: 12px;
+      text-align: center;
     }
 
     .message {
-      border-radius: 22px;
-      padding: 18px;
-      background: #1e293b;
-      border: 2px solid #334155;
-      font-size: 27px;
+      font-size: 28px;
       line-height: 1.45;
       color: #e5e7eb;
     }
@@ -139,14 +151,24 @@
       color: white;
     }
 
+    .warning {
+      background: #78350f;
+      border-color: #f59e0b;
+      color: white;
+    }
+
+    canvas {
+      display: none;
+    }
+
     @media (max-width: 390px) {
       html,
       body {
-        font-size: 25px;
+        font-size: 26px;
       }
 
       h1 {
-        font-size: 34px;
+        font-size: 35px;
       }
 
       .sub {
@@ -154,40 +176,53 @@
       }
 
       .btn {
-        font-size: 27px;
+        font-size: 28px;
+        min-height: 78px;
       }
 
       input {
-        font-size: 27px;
+        font-size: 28px;
+        min-height: 76px;
+      }
+
+      .message {
+        font-size: 25px;
       }
     }
   </style>
 </head>
 
 <body>
+  <canvas id="canvas"></canvas>
+
   <div class="page">
     <div class="header">
       <h1>Quét QR nguyên liệu</h1>
       <div class="sub">
-        Đưa camera vào mã QR trên tem nguyên liệu. Quét xong sẽ tự quay lại trang xuất hàng.
+        Bấm nút mở camera, đưa mã QR vào giữa khung xanh. Quét xong sẽ tự quay lại hệ thống.
       </div>
     </div>
 
     <div id="messageBox" class="message">
-      Đang chuẩn bị camera...
-    </div>
-
-    <div class="reader-card">
-      <div id="reader"></div>
+      Bấm “Mở camera” để bắt đầu quét.
     </div>
 
     <button class="btn btn-primary" onclick="startScanner()">
-      Mở lại camera
+      Mở camera
+    </button>
+
+    <div class="camera-card">
+      <video id="video" playsinline muted></video>
+      <div class="scan-frame"></div>
+    </div>
+
+    <button class="btn btn-danger" onclick="stopScanner()">
+      Tắt camera
     </button>
 
     <div class="manual-card">
       <div class="sub" style="margin-bottom:12px;">
-        Nếu camera không quét được, nhập Id QR:
+        Nếu camera không mở hoặc không quét được, nhập Id QR:
       </div>
       <input id="manualQr" type="text" placeholder="Nhập Id QR">
       <button class="btn btn-light" onclick="submitManual()">
@@ -201,20 +236,45 @@
   </div>
 
   <script>
-    let html5QrScanner = null;
+    let stream = null;
+    let scanLoopId = null;
+    let detector = null;
     let isProcessing = false;
+    let useNativeDetector = false;
 
     const params = new URLSearchParams(window.location.search);
     const returnUrl = params.get("returnUrl") || "";
     const lineId = params.get("lineId") || "";
 
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", async function() {
       if (!returnUrl || !lineId) {
         showMessage("Thiếu returnUrl hoặc lineId. Vui lòng mở trang quét từ hệ thống xuất hàng.", "error");
         return;
       }
 
-      startScanner();
+      if (!window.isSecureContext) {
+        showMessage("Trang chưa chạy bằng HTTPS nên trình duyệt không cho mở camera. Hãy dùng link https://...github.io/...", "error");
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showMessage("Trình duyệt này không hỗ trợ mở camera. Hãy mở bằng Chrome hoặc Safari.", "error");
+        return;
+      }
+
+      if ("BarcodeDetector" in window) {
+        try {
+          detector = new BarcodeDetector({ formats: ["qr_code"] });
+          useNativeDetector = true;
+          showMessage("Sẵn sàng. Máy này hỗ trợ quét QR nhanh bằng trình duyệt.", "success");
+        } catch (err) {
+          useNativeDetector = false;
+          showMessage("Sẵn sàng. Máy này sẽ dùng bộ đọc QR dự phòng.", "warning");
+        }
+      } else {
+        useNativeDetector = false;
+        showMessage("Sẵn sàng. Máy này chưa hỗ trợ BarcodeDetector, sẽ dùng bộ đọc QR dự phòng.", "warning");
+      }
     });
 
     function showMessage(message, type) {
@@ -223,74 +283,183 @@
 
       if (type === "error") box.classList.add("error");
       if (type === "success") box.classList.add("success");
+      if (type === "warning") box.classList.add("warning");
 
       box.innerText = message;
     }
 
-    function startScanner() {
-      if (typeof Html5Qrcode === "undefined") {
-        showMessage("Không tải được thư viện quét QR. Kiểm tra mạng Internet hoặc nhập Id QR thủ công.", "error");
+    async function startScanner() {
+      if (isProcessing) return;
+
+      stopScanner(false);
+
+      const video = document.getElementById("video");
+
+      try {
+        showMessage("Đang mở camera. Nếu trình duyệt hỏi quyền, hãy bấm Cho phép.", "warning");
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        });
+
+        video.srcObject = stream;
+        await video.play();
+
+        showMessage("Camera đã mở. Đưa mã QR vào giữa khung xanh.", "success");
+
+        scanLoop();
+      } catch (err) {
+        let msg = "Không mở được camera.";
+
+        if (err && err.name === "NotAllowedError") {
+          msg = "Bạn đã chặn quyền camera. Vào cài đặt trình duyệt để cho phép camera.";
+        } else if (err && err.name === "NotFoundError") {
+          msg = "Không tìm thấy camera trên thiết bị.";
+        } else if (err && err.name === "NotReadableError") {
+          msg = "Camera đang bị ứng dụng khác sử dụng. Hãy tắt app camera/Zalo rồi thử lại.";
+        } else if (err && err.name === "OverconstrainedError") {
+          msg = "Camera không hỗ trợ cấu hình yêu cầu. Đang thử lại cấu hình thấp hơn.";
+          showMessage(msg, "warning");
+          startScannerLowQuality();
+          return;
+        }
+
+        showMessage(msg + " Có thể nhập Id QR thủ công bên dưới.", "error");
+      }
+    }
+
+    async function startScannerLowQuality() {
+      const video = document.getElementById("video");
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+
+        video.srcObject = stream;
+        await video.play();
+
+        showMessage("Camera đã mở bằng cấu hình thấp. Đưa mã QR vào giữa khung xanh.", "success");
+
+        scanLoop();
+      } catch (err) {
+        showMessage("Không mở được camera kể cả cấu hình thấp. Hãy mở bằng Chrome/Safari hoặc nhập Id QR thủ công.", "error");
+      }
+    }
+
+    function stopScanner(showMsg) {
+      if (scanLoopId) {
+        cancelAnimationFrame(scanLoopId);
+        scanLoopId = null;
+      }
+
+      if (stream) {
+        stream.getTracks().forEach(function(track) {
+          track.stop();
+        });
+        stream = null;
+      }
+
+      const video = document.getElementById("video");
+      if (video) {
+        video.pause();
+        video.srcObject = null;
+      }
+
+      if (showMsg !== false) {
+        showMessage("Đã tắt camera.", "warning");
+      }
+    }
+
+    async function scanLoop() {
+      if (isProcessing) return;
+
+      const video = document.getElementById("video");
+
+      if (!video || video.readyState < 2) {
+        scanLoopId = requestAnimationFrame(scanLoop);
         return;
       }
 
-      isProcessing = false;
-      showMessage("Đang mở camera. Hãy bấm Cho phép nếu trình duyệt hỏi quyền camera.", "");
+      try {
+        let qrText = "";
 
-      stopScanner(function() {
-        html5QrScanner = new Html5Qrcode("reader");
+        if (useNativeDetector && detector) {
+          qrText = await scanWithNativeDetector(video);
+        }
 
-        const config = {
-          fps: 15,
-          qrbox: function(viewfinderWidth, viewfinderHeight) {
-            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-            const size = Math.floor(minEdge * 0.78);
+        if (!qrText) {
+          qrText = scanWithJsQr(video);
+        }
 
-            return {
-              width: size,
-              height: size
-            };
-          },
-          aspectRatio: 1.0
-        };
+        if (qrText) {
+          isProcessing = true;
+          showMessage("Đã quét được QR. Đang quay lại hệ thống...", "success");
+          stopScanner(false);
 
-        html5QrScanner.start(
-          {
-            facingMode: "environment"
-          },
-          config,
-          function(decodedText) {
-            if (isProcessing) return;
+          setTimeout(function() {
+            returnWithQr(qrText);
+          }, 300);
 
-            isProcessing = true;
-            showMessage("Đã quét được QR. Đang quay lại hệ thống...", "success");
-            stopScanner(function() {
-              returnWithQr(decodedText);
-            });
-          },
-          function(errorMessage) {}
-        ).then(function() {
-          showMessage("Camera đã sẵn sàng. Đưa mã QR vào khung quét.", "");
-        }).catch(function(err) {
-          showMessage("Không mở được camera. Hãy mở bằng Chrome/Safari hoặc nhập Id QR thủ công.", "error");
-        });
-      });
+          return;
+        }
+      } catch (err) {}
+
+      scanLoopId = requestAnimationFrame(scanLoop);
     }
 
-    function stopScanner(callback) {
-      if (html5QrScanner) {
-        html5QrScanner.stop()
-          .then(function() {
-            html5QrScanner.clear();
-            html5QrScanner = null;
-            if (callback) callback();
-          })
-          .catch(function() {
-            html5QrScanner = null;
-            if (callback) callback();
-          });
-      } else {
-        if (callback) callback();
+    async function scanWithNativeDetector(video) {
+      try {
+        const barcodes = await detector.detect(video);
+
+        if (barcodes && barcodes.length > 0) {
+          return String(barcodes[0].rawValue || "").trim();
+        }
+      } catch (err) {}
+
+      return "";
+    }
+
+    function scanWithJsQr(video) {
+      if (typeof jsQR === "undefined") {
+        return "";
       }
+
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d", {
+        willReadFrequently: true
+      });
+
+      const videoWidth = video.videoWidth || 1280;
+      const videoHeight = video.videoHeight || 720;
+
+      if (!videoWidth || !videoHeight) return "";
+
+      const maxSize = 900;
+      const scale = Math.min(1, maxSize / Math.max(videoWidth, videoHeight));
+
+      canvas.width = Math.round(videoWidth * scale);
+      canvas.height = Math.round(videoHeight * scale);
+
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "attemptBoth"
+      });
+
+      if (code && code.data) {
+        return String(code.data).trim();
+      }
+
+      return "";
     }
 
     function returnWithQr(qrText) {
@@ -313,8 +482,13 @@
     }
 
     function goBackWithoutQr() {
+      stopScanner(false);
       window.location.href = returnUrl;
     }
+
+    window.addEventListener("pagehide", function() {
+      stopScanner(false);
+    });
   </script>
 </body>
 </html>
